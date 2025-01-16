@@ -1,0 +1,81 @@
+# Food Chain
+
+### Game Rules
+- Food Chain is single-player logic puzzle game where you manage an ecosystem.
+- The objective of the game is to create a balanced ecosystem of predators and prey. For example, maybe the ratio you want for a given level is 5 prey to every 1 predator.
+- Every game starts with 1 prey and 1 predator.
+- Every turn is broken down into 2 phases: day and night. During the day, the player can move their prey and at night, they move the predators.
+- The predator spawns at the cell called the "cave" and the prey spawns at the cell called the "nest".
+- The board is a grid of cells with varying terrain. Terrain can be:
+    - Default: A standard cell that can be occupied by either prey or predators.
+    - Grass: If a prey remains on grass for 1 turn, it will reproduce and spawn a new prey.
+    - Water: These cells are impassable to both prey and predators.
+    - Trees: These cells are impassable to predators but prey can move through them.
+- Movement instructions:
+    - Prey can move orthogonally in any distance to an adjacent cell.
+    - Predators can move orthogonally and diagonally in any distance to an adjacent cell similar to a queen in chess.
+- Predators will die if they do not eat in 3 turns.
+- Prey do not die unless they are eaten by a predator.
+- Predators will eat prey if they are in the same cell.
+- The player wins when the ratio of predators to prey is the desired ratio.
+- Acheiving the desired ratio in as few turns as possible is the aim.
+- Each level can have a different desired ratio and different terrain.
+- The starting board should be 5x5.
+- The board should be randomly generated with the cave and nest being in opposite corners of the board.
+
+### Gameplay
+- Players will use the arrow keys to move their prey and predators.
+- The player can press the enter key to end the day/night phase.
+
+### UI/UX
+- The game should be designed to be played on mobile devices but also support larger screens.
+- Outside of the board which should take up the majority of the screen, there should be some status info:
+    - The current day or night phase
+    - How many days have passed
+    - Target ratio of predators/prey
+    - Current ratio of predators/prey
+    - Current score
+    - High score
+
+### Art Direction
+- All imagery should be simple and geometric
+- Terrain should use limited color pallette and be easily distinguishable from each other
+- I may add more terrain options in the future but for now, I'll start with grass, water, and trees.
+- The cave and nest should be easily distinguishable from the rest of the board.
+- The prey and predators should be easily distinguishable from the rest of the board.
+- The cave should be a dark gray and the nest should be a light gray.
+
+### Instructions
+- Typescript is the required programming language
+- Always write clean, readable, and maintainable code. Do not really on complex patterns
+
+### Future Goals
+- Every day I would like to add a new level for people to solve.
+
+### Directory Structure
+├── package.json
+├── next.config.js
+├── pages/
+│   ├── _app.js                # Global providers (e.g. Supabase auth context), global styles
+│   ├── index.js               # Landing/homepage
+│   ├── game.js                # Main puzzle/board logic, dynamically shows current level
+│   └── api/
+│       └── scores.js          # (Optional) API route for saving/loading daily user scores
+├── components/
+│   ├── Board.js               # Renders the game board
+│   ├── Predator.js            # Minimal Predator representation
+│   ├── Prey.js                # Minimal Prey representation
+│   ├── Terrain.js             # Renders a cell’s terrain type
+│   └── UI/
+│       ├── StatusBar.js       # Displays ratio, day/night, score, etc.
+│       └── Controls.js        # Wraps input logic (arrow keys, mobile input, etc.)
+├── styles/
+│   ├── globals.css            # Global styles
+│   └── Board.module.css       # Board-specific styles
+├── public/
+│   └── images/                # (Optional) Any icons or images
+├── utils/
+│   ├── generateBoard.js       # Board-randomization logic
+│   ├── gameLogic.js           # Movement, day/night phases, spawning, etc.
+│   └── supabase.js            # Initialization for Supabase client
+└── .env.local       
