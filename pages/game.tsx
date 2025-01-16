@@ -20,6 +20,7 @@ export default function Game() {
   useEffect(() => {
     const initialBoard = generateBoard(5, 5);
     setBoard(initialBoard);
+    logGameState('Initial board state', initialBoard);
 
     // Find and select the prey if there's only one
     let preyCount = 0;
@@ -49,7 +50,7 @@ export default function Game() {
     board.forEach((row, r) => {
       row.forEach((cell, c) => {
         if (cell.prey?.id && !cell.prey.hasMoved) {
-          console.log(`Found unmoved prey at ${r},${c}:`, cell.prey);
+        //   console.log(`Found unmoved prey at ${r},${c}:`, cell.prey);
           preyList.push({ id: cell.prey.id, row: r, col: c });
         }
       });
@@ -146,6 +147,8 @@ export default function Game() {
     const updatedBoard = updateGameState(board, entity, direction, phase, activePrey);
     if (!updatedBoard) return;
 
+    logGameState(`After ${entity} move`, updatedBoard);
+
     if (entity === 'prey') {
       // Update board and mark prey as moved
       setBoard(updatedBoard.map(row =>
@@ -160,15 +163,17 @@ export default function Game() {
 
       // Find next unmoved prey
       const unmovedPrey = getUnmovedPreyFromBoard(updatedBoard);
-      if (unmovedPrey.length === 0) {
-        // All prey have moved - end day phase
-        setActivePrey(null);
-        handleEndPhase();
-      } else {
+      if (unmovedPrey.length > 0) {
         // Select next prey
         const nextPrey = unmovedPrey[0];
         setActivePrey(nextPrey.id);
         showPotentialMoves('prey', nextPrey.row, nextPrey.col);
+        console.log(`Selected next prey: ${nextPrey.id}, ${unmovedPrey.length} prey remaining`);
+      } else {
+        // All prey have moved - transition to night phase
+        setActivePrey(null);
+        console.log('All prey have moved, transitioning to night phase');
+        handleEndPhase();
       }
     } else {
       // Predator move
@@ -388,27 +393,43 @@ export default function Game() {
       };
       newBoard[currentRow][currentCol].prey = null;
       newBoard[row][col].prey = movedPrey;
+      
+      // Clear highlights
+      newBoard.forEach((r) => r.forEach((cell) => (cell.highlight = undefined)));
+      
+      // Find next unmoved prey
+      const unmovedPrey = getUnmovedPreyFromBoard(newBoard);
+      if (unmovedPrey.length > 0) {
+        // Select next prey and show its moves
+        const nextPrey = unmovedPrey[0];
+        setActivePrey(nextPrey.id);
+        
+        // Update board with the new prey's potential moves
+        newBoard[nextPrey.row][nextPrey.col].highlight = {
+          type: 'start',
+          entityType: 'prey'
+        };
+        
+        // Show potential moves for the next prey
+        showPotentialMoves('prey', nextPrey.row, nextPrey.col);
+        console.log(`Selected next prey: ${nextPrey.id}, ${unmovedPrey.length} prey remaining`);
+      } else {
+        // All prey have moved
+        setActivePrey(null);
+        console.log('All prey have moved, transitioning to night phase');
+        handleEndPhase();
+      }
     } else {
       // Move predator to new position
       const movedPredator = { ...newBoard[currentRow][currentCol].predator! };
       newBoard[currentRow][currentCol].predator = null;
       newBoard[row][col].predator = movedPredator;
-    }
-
-    // Clear highlights and update board
-    newBoard.forEach((r) => r.forEach((cell) => (cell.highlight = undefined)));
-    setBoard(newBoard);
-
-    if (entity === 'prey') {
-      setActivePrey(null);
-      // Check if this was the last prey to move
-      const remainingPrey = getUnmovedPreyFromBoard(newBoard).length;
-      if (remainingPrey === 0) {
-        handleEndPhase();
-      }
-    } else {
+      // Clear highlights for predator move
+      newBoard.forEach((r) => r.forEach((cell) => (cell.highlight = undefined)));
       setHasPredatorMoved(true);
     }
+
+    setBoard(newBoard);
   }
 
   // Add helper function to find current entity position
@@ -454,7 +475,44 @@ export default function Game() {
     }
   };
 
-  // Add the reproduction function
+  // Add helper function to log game state
+  function logGameState(message: string, currentBoard: Cell[][]) {
+    console.group(`Game State: ${message}`);
+    
+    // Log all prey
+    console.group('Prey:');
+    currentBoard.forEach((row, r) => {
+      row.forEach((cell, c) => {
+        if (cell.prey) {
+          console.log(`Prey at (${r},${c}):`, {
+            id: cell.prey.id,
+            hasMoved: cell.prey.hasMoved,
+            daysOnGrass: cell.prey.daysOnGrass,
+            terrain: cell.terrain
+          });
+        }
+      });
+    });
+    console.groupEnd();
+    
+    // Log predator
+    console.group('Predator:');
+    currentBoard.forEach((row, r) => {
+      row.forEach((cell, c) => {
+        if (cell.predator) {
+          console.log(`Predator at (${r},${c}):`, {
+            hungryTurns: cell.predator.hungryTurns,
+            terrain: cell.terrain
+          });
+        }
+      });
+    });
+    console.groupEnd();
+    
+    console.groupEnd();
+  }
+
+  // Add logging to key functions
   function handlePreyReproduction(currentBoard: Cell[][]): Cell[][] {
     const newBoard = currentBoard.map(row => row.map(cell => ({ ...cell })));
     
@@ -475,12 +533,18 @@ export default function Game() {
         for (let c = 0; c < newBoard[r].length; c++) {
           if (newBoard[r][c].terrain === 'nest' && !newBoard[r][c].prey) {
             // Spawn new prey at empty nest
+            const newPreyId = crypto.randomUUID();
             newBoard[r][c].prey = {
-              id: crypto.randomUUID(),
+              id: newPreyId,
               hasMoved: false,
               daysOnGrass: 0
             };
-            console.log(`New prey spawned at nest (${preyOnGrassCount} prey on grass)`);
+            console.log(`New prey spawned at nest:`, {
+              id: newPreyId,
+              position: [r, c],
+              preyOnGrass: preyOnGrassCount
+            });
+            logGameState('After reproduction', newBoard);
             break;
           }
         }
